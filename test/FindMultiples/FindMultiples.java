@@ -1,23 +1,27 @@
+import java.util.Scanner;
 
-class Multiply {
-    public int num;
+public class StringReverserManual {
 
-    Multiply(int num) {
-        this.num = num;
-    }
-
-    public void multiplyByNum() {
-        for (int i = 1; i <= 10; i++) {
-            int result = i * this.num;
-            System.out.println(i +  "x" + this.num + "="  + result);
-    }
-    }
-}
-
-public class FindMultiples {
     public static void main(String[] args) {
-        Multiply obj = new Multiply(7);
-        obj.multiplyByNum();
+        // Create a Scanner object to take user input
+        Scanner scanner = new Scanner(System.in);
+
+        // Prompt the user to enter a string
+        System.out.print("Enter a string to reverse: ");
+        String originalString = scanner.nextLine(); // Read user input
+
+        String reversedString = ""; // Initialize an empty string for the result
+
+        // Iterate from the last character to the first
+        for (int i = originalString.length() - 1; i >= 0; i--) {
+            reversedString = reversedString + originalString.charAt(i);
+        }
+
+        // Output the results
+        System.out.println("Original string: " + originalString);
+        System.out.println("Reversed string: " + reversedString);
         
+        // Close the scanner
+        scanner.close();
     }
 }
