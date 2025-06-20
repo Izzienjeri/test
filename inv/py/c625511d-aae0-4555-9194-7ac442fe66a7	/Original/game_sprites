@@ -1,0 +1,286 @@
+import pygame
+
+class Crosshair(pygame.sprite.Sprite):
+    def __init__(self, size):
+        super().__init__()
+        self.image = pygame.Surface((size, size), pygame.SRCALPHA)
+        pygame.draw.line(self.image, (255, 0, 0), (size // 2, 0), (size // 2, size), 2)
+        pygame.draw.line(self.image, (255, 0, 0), (0, size // 2), (size, size // 2), 2)
+        self.rect = self.image.get_rect()
+
+    def update(self):
+        self.rect.center = pygame.mouse.get_pos()
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+import math
+
+import pygame
+
+import random
+
+
+class IceShard(pygame.sprite.Sprite):
+    def __init__(self, x, y, angle, game, player, player_velocity_x, player_velocity_y, damage, explosion_radius,
+                 max_hits, slow_percentage):
+        super().__init__()
+        self.rect = pygame.Rect(x, y, 10, 10)  # Adjust the size of the ice shard
+        self.start_pos = (x, y)
+        self.angle = angle
+        self.speed = 12
+        self.game = game
+        self.player = player
+
+        self.slow_percentage = slow_percentage
+        self.damage = damage
+        self.explosion_radius = explosion_radius
+        self.max_hits = max_hits
+        self.color = (100, 100, 255)  # Light blue color
+
+        self.hits_left = self.max_hits
+        self.last_hit_enemy = None  # Store only the last hit enemy
+
+        self.spawn_time = pygame.time.get_ticks()
+
+        self.max_distance = 1500  # Maximum distance from the player before the ice shard is killed
+        self.velocity_x = self.speed * math.cos(math.radians(self.angle)) + player_velocity_x
+        self.velocity_y = self.speed * math.sin(math.radians(self.angle)) + player_velocity_y
+
+        self.continue_straight_distance = 0  # Distance to continue straight after hitting an enemy
+
+    def update(self):
+        # Update the position of the ice shard based on its velocity
+        self.rect.x += self.velocity_x
+        self.rect.y += self.velocity_y
+
+        # Check if the ice shard should continue straight
+        if self.continue_straight_distance > 0:
+            self.continue_straight_distance -= math.hypot(self.velocity_x, self.velocity_y)
+            if self.continue_straight_distance <= 0:
+                self.last_hit_enemy = None  # Clear the last hit enemy before finding a new target
+                self.find_new_target()
+        collided_enemy = pygame.sprite.spritecollideany(self, self.game.enemies)
+        if collided_enemy and collided_enemy != self.last_hit_enemy:
+            self.last_hit_enemy = collided_enemy
+            self.explode(collided_enemy)
+
+        # Check if the ice shard is too far away from the player
+        distance_to_player = math.hypot(self.player.rect.centerx - self.rect.centerx,
+                                        self.player.rect.centery - self.rect.centery)
+        if distance_to_player > self.max_distance:
+            self.kill()  # Remove the ice shard from all sprite groups
+
+    def explode(self, collided_enemy=None):
+        collided_enemy.take_damage(self.damage)
+
+        # Create an ice patch at the explosion location and add it to the game's ice_patches group
+        ice_patch = IcePatch(self.rect.centerx, self.rect.centery, self.explosion_radius,
+                             2000, self.slow_percentage)  # Adjust the duration as needed
+        self.game.ice_patches.add(ice_patch)
+
+        if self.hits_left > 0:
+            self.hits_left -= 1
+            self.continue_straight_distance = 100  # Set the distance to continue straight
+        else:
+            # Remove the ice shard from the game
+            self.kill()
+
+    def find_new_target(self):
+        closest_enemy = self.find_closest_enemy()
+        if closest_enemy:
+            # Calculate the new angle towards the closest enemy
+            dx = closest_enemy.rect.centerx - self.rect.centerx
+            dy = closest_enemy.rect.centery - self.rect.centery
+            self.angle = math.degrees(math.atan2(dy, dx))
+
+            # Update the ice shard's velocity based on the new angle
+            self.velocity_x = self.speed * math.cos(math.radians(self.angle))
+            self.velocity_y = self.speed * math.sin(math.radians(self.angle))
+        else:
+            # Remove the ice shard from the game if no new target is found
+            self.kill()
+
+    def find_closest_enemy(self):
+        closest_enemy = None
+        min_distance = float('inf')
+        for enemy in self.game.enemies:
+
+            distance = math.hypot(enemy.rect.centerx - self.rect.centerx,
+                                  enemy.rect.centery - self.rect.centery)
+            if distance < min_distance:
+                min_distance = distance
+                closest_enemy = enemy
+        return closest_enemy
+
+    def draw(self, screen, camera_x, camera_y):
+        # Calculate the position of the ice shard relative to the camera
+        shard_x = self.rect.centerx - camera_x
+        shard_y = self.rect.centery - camera_y
+
+        # Calculate the angle based on the ice shard's velocity
+        angle_to_movement = math.atan2(self.velocity_y, self.velocity_x)
+
+        # Calculate the position and size of the circles
+        radius = 10  # Adjust the size of the quarter moon
+        offset = radius * 0.3  # Adjust the offset of the second circle
+
+        # Create a circular surface for the ice shard
+        shard_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(shard_surface, (255, 255, 255), (radius, radius), radius)
+
+        # Create a mask surface for the second circle
+        mask_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(mask_surface, (255, 255, 255),
+                           (radius - offset * math.cos(angle_to_movement),
+                            radius - offset * math.sin(angle_to_movement)),
+                           radius)
+
+        # Apply the mask surface to the shard surface using destination-out blending
+        shard_surface.blit(mask_surface, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
+
+        # Color the remaining part of the shard surface
+        shard_surface.fill(self.color, special_flags=pygame.BLEND_RGBA_MULT)
+
+        # Draw the resulting ice shard surface on the screen
+        screen.blit(shard_surface, (shard_x - radius, shard_y - radius))
+
+
+class IcePatch(pygame.sprite.Sprite):
+    def __init__(self, x, y, radius, duration, slow_percentage):
+        super().__init__()
+        self.rect = pygame.Rect(x - radius, y - radius, radius * 2, radius * 2)
+        self.radius = radius
+        self.duration = duration
+        self.start_time = pygame.time.get_ticks()
+        self.color = (200, 200, 255)  # White color for snow particles
+        self.num_particles = 50  # Adjust the number of snow particles
+        self.particles = []
+        self.generate_particles()
+        self.slow_percentage = slow_percentage
+
+    def generate_particles(self):
+        for _ in range(self.num_particles):
+            angle = random.uniform(0, 2 * math.pi)
+            distance = random.uniform(0, self.radius)
+            x = self.rect.centerx + distance * math.cos(angle)
+            y = self.rect.centery + distance * math.sin(angle)
+            speed = random.uniform(1, 3)  # Adjust the speed of snow particles
+            self.particles.append([(x, y), speed])
+
+    def update(self):
+        # Update the position of snow particles
+        for particle in self.particles:
+            particle[0] = (particle[0][0], particle[0][1] + particle[1])
+            if particle[0][1] > self.rect.bottom:
+                particle[0] = (particle[0][0], self.rect.top)
+
+        # Check if the ice patch has melted
+        if pygame.time.get_ticks() - self.start_time >= self.duration:
+            self.kill()
+
+    def draw(self, screen, camera_x, camera_y):
+        # Draw the snow particles within the circular area
+        for particle in self.particles:
+            x = particle[0][0] - camera_x
+            y = particle[0][1] - camera_y
+            if (x - self.rect.centerx + camera_x) ** 2 + (y - self.rect.centery + camera_y) ** 2 <= self.radius ** 2:
+                pygame.draw.circle(screen, self.color, (int(x), int(y)), 2)  # Adjust the size of snow particles
+
+
+import pygame
+import random
+
+from topdown.card import Card
+
+
+class LevelUpScreen:
+    def __init__(self, game):
+        self.game = game
+        self.card_width = 200
+        self.card_height = 300
+        self.selected_card = None
+        self.cards = self.generate_cards()
+        self.background = None
+
+    def generate_cards(self):
+        # Define the available cards
+        all_cards = [
+            Card("Upgrade Missiles", "Increases missile area by 1 pixel, damage by 10, and count by 1",
+                 self.card_width, self.card_height),
+            Card("Upgrade Fire Bomb", "Increases fire bomb damage by 1, radius by 5, and reduces cooldown by 5%",
+                 self.card_width, self.card_height),
+            # Add more cards as needed
+            Card("Upgrade Bullets", "Increases bullet damage by 5, adds a new gun after 4 upgrades", self.card_width,
+                 self.card_height),
+
+            Card("Upgrade Ice Shards", "Increases ice shard damage by 5, slow by 1%, radius by 1, and max bounces by 1",
+                 self.card_width, self.card_height),
+        ]
+
+        # Randomly pick 3 cards from the all_cards list
+        return random.sample(all_cards, 3)
+
+    def update(self):
+        if self.game.player.leveled_up:
+            mouse_pos = pygame.mouse.get_pos()
+
+            for card in self.cards:
+                if card.rect.collidepoint(mouse_pos):
+                    self.selected_card = card
+                    break
+            else:
+                self.selected_card = None
+
+
+    def handle_events(self, events):
+        if self.game.player.leveled_up:
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONUP:
+                    if event.button == 1:  # Left mouse button
+                        mouse_pos = pygame.mouse.get_pos()
+                        for card in self.cards:
+                            if card.rect.collidepoint(mouse_pos):
+                                self.apply_power_up(card.option)
+                                self.game.player.leveled_up = False  # Reset the leveled_up flag
+                                self.cards = self.generate_cards()  # Generate new cards for the next level up
+                                return
+
+    def apply_power_up(self, option):
+        if option == "Upgrade Bullets":
+            self.game.player.upgrade_bullets()
+        elif option == "Upgrade Missiles":
+            self.game.player.upgrade_missiles()
+        elif option == "Upgrade Fire Bomb":
+            self.game.player.upgrade_fire_bomb()
+        elif option == "Upgrade Ice Shards":
+            self.game.player.ice_barrage_active = True
+            self.game.player.upgrade_ice_shards()
+
+
+    def draw(self, screen):
+        if self.game.player.leveled_up:
+            screen_width, screen_height = screen.get_size()
+
+            # Draw the captured game screen as the background
+            if self.background is not None:
+                screen.blit(self.background, (0, 0))
+
+            # Draw a semi-transparent overlay on top of the background
+            overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 0))
+            screen.blit(overlay, (0, 0))
+
+            # Calculate the total width of the cards
+            total_card_width = len(self.cards) * self.card_width
+            spacing = (screen_width - total_card_width) // (len(self.cards) + 1)
+
+            # Draw the cards
+            for i, card in enumerate(self.cards):
+                card_x = spacing * (i + 1) + self.card_width * i
+                card_y = (screen_height - self.card_height) // 2
+                card.rect.topleft = (card_x, card_y)
+                card.draw(screen, card == self.selected_card)
+
+            # Draw the crosshair
+            self.game.crosshair.draw(screen)
+            self.game.crosshair.update()
