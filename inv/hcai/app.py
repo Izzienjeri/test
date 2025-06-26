@@ -1,10 +1,14 @@
-from datetime import date
+text = "  Hello World!  \n"
 
-# Get today's date
-today = date.today()
+trimmed_text = text.strip()
+print(trimmed_text)  # Output: "Hello World!"
 
-# Format the date with the full month name
-formatted_date = today.strftime("%B %d, %Y")
+left_trimmed_text = text.lstrip()
+print(left_trimmed_text) # Output: "Hello World!  \n"
 
-# Print the formatted date
-print(formatted_date)
+right_trimmed_text = text.rstrip()
+print(right_trimmed_text) # Output: "  Hello World!"
+
+text_with_chars = "---Hello---"
+trimmed_chars = text_with_chars.strip("-")
+print(trimmed_chars)  # Output: "Hello"
