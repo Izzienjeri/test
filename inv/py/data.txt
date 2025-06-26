@@ -1,0 +1,27 @@
+Exception in Tkinter callback
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/tkinter/__init__.py", line 1967, in __call__
+    return self.func(*args)
+           ^^^^^^^^^^^^^^^^
+  File "/home//dev/inv/py/app.py", line 59, in update_chart
+    prices = response['prices']
+             ~~~~~~~~^^^^^^^^^^
+KeyError: 'prices'
+Exception in Tkinter callback
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/tkinter/__init__.py", line 1967, in __call__
+    return self.func(*args)
+           ^^^^^^^^^^^^^^^^
+  File "/home//dev/inv/py/app.py", line 70, in update_chart
+    ax.set_title(f"{response['name']} ({response['symbol'].upper()}) Price Chart")
+                    ~~~~~~~~^^^^^^^^
+KeyError: 'name'
+Exception in Tkinter callback
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/tkinter/__init__.py", line 1967, in __call__
+    return self.func(*args)
+           ^^^^^^^^^^^^^^^^
+  File "/home//dev/inv/py/app.py", line 70, in update_chart
+    ax.set_title(f"{response['name']} ({response['symbol'].upper()}) Price Chart")
+                    ~~~~~~~~^^^^^^^^
+KeyError: 'name'

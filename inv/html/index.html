@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pazaak Game</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    .card {
+      display: inline-block;
+      width: 50px;
+      height: 80px;
+      border: 1px solid black;
+      margin: 5px;
+      padding: 10px;
+      font-size: 24px;
+      text-align: center;
+      line-height: 80px;
+    }
+    .side-deck {
+      margin-top: 20px;
+    }
+    .side-deck button {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pazaak Game</h1>
+  <div id="set-info">Set: 1</div>
+  <div id="games-info">
+    Player Games: <span id="player-games">0</span>
+    AI Games: <span id="ai-games">0</span>
+  </div>
+  <div id="player-score">Player Score: 0</div>
+  <div id="ai-score">AI Score: 0</div>
+  <div id="player-cards"></div>
+  <div id="ai-cards"></div>
+  <button id="hit-button">Hit</button>
+  <button id="stay-button">Stay</button>
+  <div class="side-deck">
+    <button id="side-deck-1">+1</button>
+    <button id="side-deck-2">+2</button>
+    <button id="side-deck-3">+3</button>
+    <button id="side-deck-4">+4</button>
+    <button id="side-deck-5">+5</button>
+  </div>
+  <div id="result"></div>
+  <div id="scores">
+    Player Sets: <span id="player-sets">0</span>
+    AI Sets: <span id="ai-sets">0</span>
+  </div>
+
+  <script>
+    const playerCardsDiv = document.getElementById('player-cards');
+    const aiCardsDiv = document.getElementById('ai-cards');
+    const playerScoreDiv = document.getElementById('player-score');
+    const aiScoreDiv = document.getElementById('ai-score');
+    const hitButton = document.getElementById('hit-button');
+    const stayButton = document.getElementById('stay-button');
+    const sideDeckButtons = document.querySelectorAll('.side-deck button');
+    const resultDiv = document.getElementById('result');
+    const playerGamesDiv = document.getElementById('player-games');
+    const aiGamesDiv = document.getElementById('ai-games');
+    const playerSetsDiv = document.getElementById('player-sets');
+    const aiSetsDiv = document.getElementById('ai-sets');
+    const setInfoDiv = document.getElementById('set-info');
+
+    let playerScore = 0;
+    let aiScore = 0;
+    let playerTurn = true;
+    let gameEnded = false;
+    let playerGames = 0;
+    let aiGames = 0;
+    let playerSets = 0;
+    let aiSets = 0;
+    let currentSet = 1;
+
+    hitButton.addEventListener('click', hit);
+    stayButton.addEventListener('click', stay);
+    sideDeckButtons.forEach(button => {
+      button.addEventListener('click', playSideDeckCard);
+    });
+
+    function hit() {
+      if (!gameEnded && playerTurn) {
+        const card = drawCard();
+        playerScore += card;
+        playerCardsDiv.innerHTML += `<div class="card">${card}</div>`;
+        playerScoreDiv.textContent = `Player Score: ${playerScore}`;
+        checkScore();
+        if (!gameEnded) {
+          aiTurn();
+        }
+      }
+    }
+
+    function stay() {
+      if (!gameEnded && playerTurn) {
+        playerTurn = false;
+        endPlayerTurn();
+      }
+    }
+
+    function playSideDeckCard(event) {
+      if (!gameEnded && playerTurn && !event.target.disabled) {
+        const card = parseInt(event.target.textContent);
+        playerScore += card;
+        playerScoreDiv.textContent = `Player Score: ${playerScore}`;
+        event.target.disabled = true;
+        checkScore();
+        if (!gameEnded) {
+          endPlayerTurn();
+        }
+      }
+    }
+
+    function endPlayerTurn() {
+      checkScore();
+      if (!gameEnded) {
+        aiTurn();
+      }
+    }
+
+    function aiTurn() {
+      if (!gameEnded && aiScore < 17) {
+        const card = drawCard();
+        aiScore += card;
+        aiCardsDiv.innerHTML += `<div class="card">${card}</div>`;
+        aiScoreDiv.textContent = `AI Score: ${aiScore}`;
+        checkScore();
+      } else {
+        playerTurn = true;
+        checkScore();
+      }
+    }
+
+    function drawCard() {
+      return Math.floor(Math.random() * 10) + 1;
+    }
+
+    function checkScore() {
+      if (playerScore > 20) {
+        endGame('You bust! AI wins!', 'ai');
+      } else if (aiScore > 20) {
+        endGame('AI busts! You win!', 'player');
+      } else if (playerScore === 20 && aiScore === 20) {
+        endGame('It\'s a tie!');
+      } else if (playerScore === 20) {
+        endGame('You win!', 'player');
+      } else if (!playerTurn && playerScore <= 20 && aiScore <= 20) {
+        if (playerScore > aiScore) {
+          endGame('You win!', 'player');
+        } else if (aiScore > playerScore) {
+          endGame('AI wins!', 'ai');
+        } else {
+          endGame('It\'s a tie!');
+        }
+      }
+    }
+
+    function endGame(message, winner) {
+      gameEnded = true;
+      resultDiv.textContent = message;
+      hitButton.disabled = true;
+      stayButton.disabled = true;
+
+      if (winner === 'player') {
+        playerGames++;
+        playerGamesDiv.textContent = playerGames;
+      } else if (winner === 'ai') {
+        aiGames++;
+        aiGamesDiv.textContent = aiGames;
+      }
+
+      if (playerGames === 2 || aiGames === 2) {
+        if (playerGames === 2) {
+          playerSets++;
+          playerSetsDiv.textContent = playerSets;
+          resultDiv.textContent += ' You won the set!';
+        } else {
+          aiSets++;
+          aiSetsDiv.textContent = aiSets;
+          resultDiv.textContent += ' AI won the set!';
+        }
+        setTimeout(resetSet, 2000);
+      } else {
+        setTimeout(resetGame, 2000);
+      }
+    }
+
+    function resetGame() {
+      playerScore = 0;
+      aiScore = 0;
+      playerTurn = true;
+      gameEnded = false;
+      playerCardsDiv.innerHTML = '';
+      aiCardsDiv.innerHTML = '';
+      playerScoreDiv.textContent = 'Player Score: 0';
+      aiScoreDiv.textContent = 'AI Score: 0';
+      resultDiv.textContent = '';
+      hitButton.disabled = false;
+      stayButton.disabled = false;
+    }
+
+    function resetSet() {
+      resetGame();
+      playerGames = 0;
+      aiGames = 0;
+      playerGamesDiv.textContent = '0';
+      aiGamesDiv.textContent = '0';
+      currentSet++;
+      setInfoDiv.textContent = `Set: ${currentSet}`;
+      sideDeckButtons.forEach(button => {
+        button.disabled = false;
+      });
+    }
+  </script>
+</body>
+</html>

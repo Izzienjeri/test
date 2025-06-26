@@ -8,6 +8,11 @@ numpy = "*"
 torch = "*"
 exllama = "*"
 bs4 = "*"
+requests = "*"
+pandas = "*"
+matplotlib = "*"
+tk = "*"
+pyqt5 = "*"
 
 [dev-packages]
 

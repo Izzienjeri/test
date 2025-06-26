@@ -1,0 +1,61 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #222; /* Fondo oscuro */
+}
+
+.form {
+  background-color: #333; /* Fondo un poco más claro para el formulario */
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  width: 400px;
+}
+
+.form h2 {
+  text-align: center;
+  color: #ffc107; /* Color de acento ámbar */
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  color: #fff;
+  margin-bottom: 5px;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #444;
+  color: #fff;
+}
+
+.error {
+  color: #ff4081; /* Color de error rojizo */
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+.submit-button {
+  background-color: #ffc107; /* Color de acento ámbar */
+  color: #222;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.submit-button:hover {
+  background-color: #ffa000; /* Ámbar un poco más oscuro al pasar el ratón */
+}
