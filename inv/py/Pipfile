@@ -13,6 +13,7 @@ pandas = "*"
 matplotlib = "*"
 tk = "*"
 pyqt5 = "*"
+scikit-learn = "*"
 
 [dev-packages]
 
